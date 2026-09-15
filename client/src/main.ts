@@ -498,7 +498,7 @@ async function initAudioChat(username: string) {
     }
   });
 
-  socket.on("voice_audio", ({ id, data }) => {
+  socket.on("voice_audio", ({ data }) => {
     try {
       if (playbackCtx.state === "suspended") {
         playbackCtx.resume();
