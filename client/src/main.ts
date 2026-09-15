@@ -649,15 +649,6 @@ function createPeerConnection(peerId: string, shouldOffer: boolean): RTCPeerConn
     }
   };
 
-      try {
-        await audioElem.play();
-        console.log("========== REMOTE AUDIO PLAYING SUCCESSFULLY ==========");
-      } catch (e) {
-        console.error("========== REMOTE AUDIO PLAY ERROR ==========", e);
-      }
-    }
-  };
-
   if (shouldOffer) {
     pc.createOffer().then(offer => {
       pc.setLocalDescription(offer);
