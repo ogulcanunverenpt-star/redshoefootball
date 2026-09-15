@@ -578,11 +578,35 @@ function createPeerConnection(peerId: string, shouldOffer: boolean): RTCPeerConn
   const pc = new RTCPeerConnection({
     iceServers: [
       { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" }
+      { urls: "stun:stun1.l.google.com:19302" },
+      { urls: "stun:stun2.l.google.com:19302" },
+      {
+        urls: "turn:openrelay.metered.ca:80",
+        username: "openrelay",
+        credential: "openrelay"
+      },
+      {
+        urls: "turn:openrelay.metered.ca:443",
+        username: "openrelay",
+        credential: "openrelay"
+      },
+      {
+        urls: "turn:openrelay.metered.ca:443?transport=tcp",
+        username: "openrelay",
+        credential: "openrelay"
+      }
     ]
   });
 
   peerConnections[peerId] = pc;
+
+  pc.oniceconnectionstatechange = () => {
+    console.log(`[Peer ${peerId}] ICE State:`, pc.iceConnectionState);
+  };
+
+  pc.onconnectionstatechange = () => {
+    console.log(`[Peer ${peerId}] Connection State:`, pc.connectionState);
+  };
 
   if (localAudioStream) {
     localAudioStream.getTracks().forEach(track => {
@@ -597,11 +621,7 @@ function createPeerConnection(peerId: string, shouldOffer: boolean): RTCPeerConn
   };
 
   pc.ontrack = async (event) => {
-    console.log("========== REMOTE TRACK RECEIVED ==========");
-    console.log("kind:", event.track.kind);
-    console.log("enabled:", event.track.enabled);
-    console.log("muted:", event.track.muted);
-    console.log("readyState:", event.track.readyState);
+    console.log("========== REMOTE TRACK RECEIVED ==========", event.track.kind);
 
     if (event.track.kind === "audio") {
       let audioElem = document.getElementById(`audio-${peerId}`) as HTMLAudioElement;
@@ -609,33 +629,25 @@ function createPeerConnection(peerId: string, shouldOffer: boolean): RTCPeerConn
         audioElem = document.createElement("audio");
         audioElem.id = `audio-${peerId}`;
         audioElem.autoplay = true;
+        audioElem.setAttribute("playsinline", "true");
         audioElem.controls = false;
         audioElem.style.display = "none";
         document.body.appendChild(audioElem);
       }
 
-      let stream = audioElem.srcObject as MediaStream;
-      if (!stream) {
-        stream = new MediaStream([event.track]);
-        audioElem.srcObject = stream;
-      } else {
-        stream.addTrack(event.track);
-      }
-
+      const stream = event.streams[0] || new MediaStream([event.track]);
+      audioElem.srcObject = stream;
       audioElem.muted = false;
       audioElem.volume = 1.0;
 
-      // WebAudio destination output fallback
       try {
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        if (audioCtx.state === "suspended") {
-          audioCtx.resume();
-        }
-        const source = audioCtx.createMediaStreamSource(stream);
-        source.connect(audioCtx.destination);
+        await audioElem.play();
+        console.log("========== AUDIO PLAYING SUCCESSFULLY ==========");
       } catch (e) {
-        console.log("WebAudio destination fallback:", e);
+        console.error("========== AUDIO PLAYBACK ERROR ==========", e);
       }
+    }
+  };
 
       try {
         await audioElem.play();
