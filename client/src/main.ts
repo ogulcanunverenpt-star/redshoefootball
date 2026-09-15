@@ -610,18 +610,32 @@ function createPeerConnection(peerId: string, shouldOffer: boolean): RTCPeerConn
         audioElem.id = `audio-${peerId}`;
         audioElem.autoplay = true;
         audioElem.controls = false;
+        audioElem.style.display = "none";
         document.body.appendChild(audioElem);
       }
 
       let stream = audioElem.srcObject as MediaStream;
       if (!stream) {
-        stream = new MediaStream();
+        stream = new MediaStream([event.track]);
         audioElem.srcObject = stream;
+      } else {
+        stream.addTrack(event.track);
       }
-      stream.addTrack(event.track);
 
       audioElem.muted = false;
       audioElem.volume = 1.0;
+
+      // WebAudio destination output fallback
+      try {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        if (audioCtx.state === "suspended") {
+          audioCtx.resume();
+        }
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(audioCtx.destination);
+      } catch (e) {
+        console.log("WebAudio destination fallback:", e);
+      }
 
       try {
         await audioElem.play();
