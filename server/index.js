@@ -100,6 +100,23 @@ io.on("connection", (socket) => {
   const state = { position, velocity, looking, team, input: new Set(), health: 100, username: "Oyuncu", isSpeaking: false };
   players[socket.id] = state;
 
+  // Send existing player IDs to new connection for WebRTC audio
+  const existingPlayerIds = Object.keys(players).filter(id => id !== socket.id);
+  socket.emit("existing_players", existingPlayerIds);
+
+  // WebRTC Audio Signaling
+  socket.on("webrtc_offer", ({ target, offer }) => {
+    io.to(target).emit("webrtc_offer", { sender: socket.id, offer });
+  });
+
+  socket.on("webrtc_answer", ({ target, answer }) => {
+    io.to(target).emit("webrtc_answer", { sender: socket.id, answer });
+  });
+
+  socket.on("webrtc_ice", ({ target, candidate }) => {
+    io.to(target).emit("webrtc_ice", { sender: socket.id, candidate });
+  });
+
   socket.on("set username", (username) => {
     if (players[socket.id]) {
       players[socket.id].username = username || "Oyuncu";

@@ -487,49 +487,18 @@ document.addEventListener("mouseup", (e) => {
 
 document.addEventListener("contextmenu", (event) => event.preventDefault());
 
-async function initAudioChat(username: string) {
+const peerConnections: { [key: string]: RTCPeerConnection } = {};
+let localAudioStream: MediaStream | null = null;
+
+async function initWebRTCAudio(username: string) {
   socket.emit("set username", username);
 
-  const playbackCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-
-  document.addEventListener("click", () => {
-    if (playbackCtx.state === "suspended") {
-      playbackCtx.resume();
-    }
-  });
-
-  socket.on("voice_audio", ({ data }) => {
-    try {
-      if (playbackCtx.state === "suspended") {
-        playbackCtx.resume();
-      }
-      const float32Array = new Float32Array(data);
-      const buffer = playbackCtx.createBuffer(1, float32Array.length, playbackCtx.sampleRate);
-      buffer.getChannelData(0).set(float32Array);
-
-      const sourceNode = playbackCtx.createBufferSource();
-      sourceNode.buffer = buffer;
-      sourceNode.connect(playbackCtx.destination);
-      sourceNode.start();
-    } catch (e) {
-      console.error("Audio playback error:", e);
-    }
-  });
-
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    console.log("Microphone connected. Voice chat active.");
+    localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    console.log("Microphone connected. WebRTC P2P voice active.");
 
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    if (audioCtx.state === "suspended") {
-      audioCtx.resume();
-    }
-    const source = audioCtx.createMediaStreamSource(stream);
-
-    const processor = audioCtx.createScriptProcessor(2048, 1, 1);
-    const silentGain = audioCtx.createGain();
-    silentGain.gain.value = 0;
-
+    const source = audioCtx.createMediaStreamSource(localAudioStream);
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 512;
     source.connect(analyser);
@@ -544,7 +513,7 @@ async function initAudioChat(username: string) {
         sum += dataArray[i];
       }
       const avg = sum / dataArray.length;
-      const isSpeaking = avg > 8; // Lowered threshold for speech detection
+      const isSpeaking = avg > 8;
 
       if (isSpeaking !== lastSpeaking) {
         lastSpeaking = isSpeaking;
@@ -552,27 +521,104 @@ async function initAudioChat(username: string) {
       }
     }, 200);
 
-    processor.onaudioprocess = (e) => {
-      const inputData = e.inputBuffer.getChannelData(0);
-      let sum = 0;
-      for (let i = 0; i < inputData.length; i++) {
-        sum += inputData[i] * inputData[i];
-      }
-      const rms = Math.sqrt(sum / inputData.length);
-
-      if (rms > 0.003) { // Lowered RMS threshold for transmitting audio
-        const pcmBuffer = new Float32Array(inputData);
-        socket.emit("voice_audio", pcmBuffer.buffer);
-      }
-    };
-
-    source.connect(processor);
-    processor.connect(silentGain);
-    silentGain.connect(audioCtx.destination);
-
   } catch (err) {
     console.log("No microphone or permission denied. Operating in Listen-Only mode.", err);
   }
+
+  // WebRTC signaling listeners
+  socket.on("existing_players", (playerIds: string[]) => {
+    playerIds.forEach(id => {
+      if (id !== socket.id) {
+        createPeerConnection(id, true);
+      }
+    });
+  });
+
+  socket.on("player joined", ({ id }) => {
+    if (id && id !== socket.id) {
+      createPeerConnection(id, false);
+    }
+  });
+
+  socket.on("webrtc_offer", async ({ sender, offer }) => {
+    const pc = createPeerConnection(sender, false);
+    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socket.emit("webrtc_answer", { target: sender, answer });
+  });
+
+  socket.on("webrtc_answer", async ({ sender, answer }) => {
+    const pc = peerConnections[sender];
+    if (pc) {
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    }
+  });
+
+  socket.on("webrtc_ice", async ({ sender, candidate }) => {
+    const pc = peerConnections[sender];
+    if (pc && candidate) {
+      await pc.addIceCandidate(new RTCIceCandidate(candidate));
+    }
+  });
+
+  socket.on("player left", (id) => {
+    if (peerConnections[id]) {
+      peerConnections[id].close();
+      delete peerConnections[id];
+    }
+    const audioElem = document.getElementById(`audio-${id}`);
+    if (audioElem) audioElem.remove();
+  });
+}
+
+function createPeerConnection(peerId: string, shouldOffer: boolean): RTCPeerConnection {
+  if (peerConnections[peerId]) return peerConnections[peerId];
+
+  const pc = new RTCPeerConnection({
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" }
+    ]
+  });
+
+  peerConnections[peerId] = pc;
+
+  if (localAudioStream) {
+    localAudioStream.getTracks().forEach(track => {
+      pc.addTrack(track, localAudioStream!);
+    });
+  }
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      socket.emit("webrtc_ice", { target: peerId, candidate: event.candidate });
+    }
+  };
+
+  pc.ontrack = (event) => {
+    console.log("Received remote WebRTC audio track from:", peerId);
+    const remoteStream = event.streams[0];
+    let audioElem = document.getElementById(`audio-${peerId}`) as HTMLAudioElement;
+    if (!audioElem) {
+      audioElem = document.createElement("audio");
+      audioElem.id = `audio-${peerId}`;
+      audioElem.autoplay = true;
+      audioElem.controls = false;
+      document.body.appendChild(audioElem);
+    }
+    audioElem.srcObject = remoteStream;
+    audioElem.play().catch(e => console.log("Audio autoplay prevented, needs gesture:", e));
+  };
+
+  if (shouldOffer) {
+    pc.createOffer().then(offer => {
+      pc.setLocalDescription(offer);
+      socket.emit("webrtc_offer", { target: peerId, offer });
+    }).catch(err => console.error("WebRTC offer error:", err));
+  }
+
+  return pc;
 }
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -583,7 +629,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const startGame = () => {
     const username = input ? input.value.trim() || "Oyuncu" : "Oyuncu";
     if (modal) modal.style.display = "none";
-    initAudioChat(username);
+    initWebRTCAudio(username);
   };
 
   if (btn) btn.addEventListener("click", startGame);
