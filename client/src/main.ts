@@ -596,19 +596,40 @@ function createPeerConnection(peerId: string, shouldOffer: boolean): RTCPeerConn
     }
   };
 
-  pc.ontrack = (event) => {
-    console.log("Received remote WebRTC audio track from:", peerId);
-    const remoteStream = event.streams[0];
-    let audioElem = document.getElementById(`audio-${peerId}`) as HTMLAudioElement;
-    if (!audioElem) {
-      audioElem = document.createElement("audio");
-      audioElem.id = `audio-${peerId}`;
-      audioElem.autoplay = true;
-      audioElem.controls = false;
-      document.body.appendChild(audioElem);
+  pc.ontrack = async (event) => {
+    console.log("========== REMOTE TRACK RECEIVED ==========");
+    console.log("kind:", event.track.kind);
+    console.log("enabled:", event.track.enabled);
+    console.log("muted:", event.track.muted);
+    console.log("readyState:", event.track.readyState);
+
+    if (event.track.kind === "audio") {
+      let audioElem = document.getElementById(`audio-${peerId}`) as HTMLAudioElement;
+      if (!audioElem) {
+        audioElem = document.createElement("audio");
+        audioElem.id = `audio-${peerId}`;
+        audioElem.autoplay = true;
+        audioElem.controls = false;
+        document.body.appendChild(audioElem);
+      }
+
+      let stream = audioElem.srcObject as MediaStream;
+      if (!stream) {
+        stream = new MediaStream();
+        audioElem.srcObject = stream;
+      }
+      stream.addTrack(event.track);
+
+      audioElem.muted = false;
+      audioElem.volume = 1.0;
+
+      try {
+        await audioElem.play();
+        console.log("========== REMOTE AUDIO PLAYING SUCCESSFULLY ==========");
+      } catch (e) {
+        console.error("========== REMOTE AUDIO PLAY ERROR ==========", e);
+      }
     }
-    audioElem.srcObject = remoteStream;
-    audioElem.play().catch(e => console.log("Audio autoplay prevented, needs gesture:", e));
   };
 
   if (shouldOffer) {
