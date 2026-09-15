@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Football Multiplayer</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none;
+        background-color: #000;
+      }
+
+      /* Forced Fullscreen Landscape Overlay on Mobile */
+      @media screen and (orientation: portrait) {
+        #landscape-notice {
+          display: flex !important;
+        }
+      }
+
+      #landscape-notice {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.92);
+        color: #00ff9b;
+        font-family: "Inter", sans-serif;
+        font-weight: bold;
+        font-size: 18px;
+        z-index: 9999;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 20px;
+      }
+
+      #fullscreen-btn {
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        z-index: 3000;
+        background: rgba(0, 0, 0, 0.8);
+        border: 2px solid #00ff9b;
+        color: #00ff9b;
+        font-family: "Inter", sans-serif;
+        font-weight: bold;
+        font-size: 12px;
+        padding: 8px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        pointer-events: auto;
+      }
+
+      .container {
+        width: 100%;
+        margin: 15px auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        pointer-events: none;
+      }
+
+      .scoreboard {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: rgba(0, 0, 0, 0.85);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        padding: 6px 16px;
+      }
+
+      .score {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+      }
+
+      #timer {
+        color: white;
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        margin-top: 3px;
+      }
+
+      .team {
+        font-size: 22px;
+        font-weight: bold;
+        border-radius: 6px;
+        color: white;
+        padding: 4px 14px;
+        font-family: "Inter", sans-serif;
+      }
+
+      #goal {
+        font-family: "Inter", sans-serif;
+        font-weight: bold;
+        font-size: 26px;
+        color: #ffff00;
+        text-shadow: 0 0 10px #ff0000;
+      }
+
+      /* Power Charge Bar Overlay */
+      #power-meter-container {
+        position: fixed;
+        bottom: 160px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 280px;
+        height: 18px;
+        background: rgba(0, 0, 0, 0.8);
+        border: 2px solid #ffffff;
+        border-radius: 10px;
+        overflow: hidden;
+        display: none;
+        z-index: 2500;
+        box-shadow: 0 0 10px rgba(0, 255, 150, 0.8);
+      }
+
+      #power-meter-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(to right, #00ff9b, #ffff00, #ff0044);
+        transition: width 0.03s linear;
+      }
+
+      /* Mobile Touch Controls Overlay */
+      #mobile-controls {
+        position: fixed;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        padding: 0 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        z-index: 2000;
+        pointer-events: none;
+      }
+
+      /* Left Side Movement Touch Joystick */
+      #move-joystick-container {
+        position: relative;
+        width: 130px;
+        height: 130px;
+        pointer-events: auto;
+        touch-action: none;
+      }
+
+      .joystick-base {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.65);
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+      }
+
+      .joystick-thumb {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: rgba(0, 255, 150, 0.85);
+        border: 2px solid #ffffff;
+        box-shadow: 0 0 12px rgba(0, 255, 150, 0.9);
+        position: absolute;
+        transition: transform 0.04s ease-out;
+      }
+
+      /* Right Side Camera Touch Joystick + PlayStation Action Cluster */
+      #right-controls-cluster {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        pointer-events: auto;
+      }
+
+      /* Right Side Camera Joystick */
+      #camera-joystick-container {
+        position: relative;
+        width: 110px;
+        height: 110px;
+        pointer-events: auto;
+        touch-action: none;
+      }
+
+      #camera-joystick-base {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.18);
+        border: 2px solid rgba(255, 255, 0, 0.7);
+        box-shadow: 0 0 12px rgba(255, 255, 0, 0.5);
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+      }
+
+      #camera-joystick-thumb {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: rgba(255, 235, 0, 0.85);
+        border: 2px solid #ffffff;
+        box-shadow: 0 0 10px rgba(255, 235, 0, 0.8);
+        position: absolute;
+        transition: transform 0.04s ease-out;
+      }
+
+      /* PlayStation Layout Diamond Cluster */
+      #ps-button-diamond {
+        position: relative;
+        width: 140px;
+        height: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ps-btn {
+        position: absolute;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.9);
+        color: white;
+        font-family: "Inter", sans-serif;
+        font-weight: bold;
+        font-size: 18px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+        backdrop-filter: blur(4px);
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .ps-btn span {
+        font-size: 8px;
+        margin-top: 1px;
+      }
+
+      .ps-triangle {
+        top: 0;
+        left: 46px;
+        background: rgba(0, 200, 80, 0.9);
+      }
+
+      .ps-circle {
+        top: 46px;
+        right: 0;
+        background: rgba(255, 30, 60, 0.9);
+      }
+
+      .ps-cross {
+        bottom: 0;
+        left: 46px;
+        background: rgba(0, 140, 255, 0.9);
+      }
+
+      .ps-square {
+        top: 46px;
+        left: 0;
+        background: rgba(255, 0, 180, 0.9);
+      }
+
+      .ps-btn:active {
+        transform: scale(0.88);
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Name Prompt Modal on Startup -->
+    <div id="name-modal" style="position:fixed; inset:0; background:rgba(0,0,0,0.96); z-index:20000; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-family:'Inter', sans-serif;">
+      <h2 style="color:#00ff9b; margin-bottom:10px;">⚽ Futbol Multiplayer</h2>
+      <p style="color:#aaa; margin-bottom:20px; font-size:15px; text-align:center; max-width:400px;">Lütfen isminizi girin ve sesli sohbet için mikrofon izni verin (Mikrofonu olmayanlar dinleyici olur).</p>
+      <input type="text" id="username-input" placeholder="Oyuncu Adı..." maxlength="14" autofocus style="padding:12px 24px; font-size:18px; border-radius:8px; border:2px solid #00ff9b; background:#111; color:#fff; margin-bottom:15px; text-align:center; outline:none;" />
+      <button id="enter-game-btn" style="padding:14px 32px; background:#00ff9b; color:#000; font-weight:bold; font-size:18px; border:none; border-radius:8px; cursor:pointer; box-shadow:0 0 15px rgba(0,255,155,0.4);">Oyuna Giriş Yap</button>
+    </div>
+
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+
+    <button id="fullscreen-btn" onclick="toggleFullScreenAndLandscape()">⛶ TAM EKRAN (FULLSCREEN)</button>
+
+    <!-- Landscape Warning Overlay for Mobile -->
+    <div id="landscape-notice">
+      <div style="font-size: 40px; margin-bottom: 10px;">🔄</div>
+      Lütfen Telefonunuzu Yan Çevirin!<br>(Please Rotate Phone to Landscape)
+    </div>
+
+    <!-- Power Charge Meter -->
+    <div id="power-meter-container">
+      <div id="power-meter-bar"></div>
+    </div>
+
+    <div class="container">
+      <div class="scoreboard">
+        <div class="score">
+          <span class="team" id="team0" style="background-color: red">0</span>
+          <span style="color:white; font-family: Inter; margin: 0 8px;">-</span>
+          <span class="team" id="team1" style="background-color: blue">0</span>
+        </div>
+        <div id="timer">5m</div>
+        <div id="goal" style="visibility:hidden;">GOAL</div>
+      </div>
+    </div>
+
+    <!-- Mobile Touch Controls Overlay -->
+    <div id="mobile-controls">
+      <!-- Left Side Analog Movement Touch Joystick -->
+      <div id="move-joystick-container">
+        <div class="joystick-base">
+          <div id="move-joystick-thumb" class="joystick-thumb"></div>
+        </div>
+      </div>
+
+      <!-- Right Side Cluster: Camera Joystick + PlayStation Buttons -->
+      <div id="right-controls-cluster">
+        <!-- Camera Angle Joystick -->
+        <div id="camera-joystick-container">
+          <div id="camera-joystick-base">
+            <div id="camera-joystick-thumb"></div>
+          </div>
+        </div>
+
+        <!-- PlayStation Layout Diamond Cluster -->
+        <div id="ps-button-diamond">
+          <button id="btn-triangle" class="ps-btn ps-triangle">
+            Δ
+            <span>ARA PAS</span>
+          </button>
+          <button id="btn-circle" class="ps-btn ps-circle">
+            ◯
+            <span>ŞUT</span>
+          </button>
+          <button id="btn-cross" class="ps-btn ps-cross">
+            ✖
+            <span>PAS</span>
+          </button>
+          <button id="btn-square" class="ps-btn ps-square">
+            ▢
+            <span>ORTA</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function toggleFullScreenAndLandscape() {
+        const doc = document.documentElement;
+        if (!document.fullscreenElement) {
+          if (doc.requestFullscreen) {
+            doc.requestFullscreen().catch(() => {});
+          } else if (doc.webkitRequestFullscreen) {
+            doc.webkitRequestFullscreen();
+          }
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => {});
+          }
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          }
+        }
+      }
+    </script>
+  </body>
+</html>

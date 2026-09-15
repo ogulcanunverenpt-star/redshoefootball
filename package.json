@@ -1,0 +1,14 @@
+{
+  "name": "redshoefootball",
+  "version": "1.0.0",
+  "description": "Multiplayer Football Game",
+  "main": "server/index.js",
+  "scripts": {
+    "postinstall": "cd client && npm install && npm run build && cd ../server && npm install",
+    "start": "node server/index.js"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
