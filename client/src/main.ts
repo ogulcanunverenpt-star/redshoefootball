@@ -521,6 +521,9 @@ async function initAudioChat(username: string) {
     console.log("Microphone connected. Voice chat active.");
 
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
     const source = audioCtx.createMediaStreamSource(stream);
 
     const processor = audioCtx.createScriptProcessor(2048, 1, 1);
@@ -541,7 +544,7 @@ async function initAudioChat(username: string) {
         sum += dataArray[i];
       }
       const avg = sum / dataArray.length;
-      const isSpeaking = avg > 12;
+      const isSpeaking = avg > 8; // Lowered threshold for speech detection
 
       if (isSpeaking !== lastSpeaking) {
         lastSpeaking = isSpeaking;
@@ -557,7 +560,7 @@ async function initAudioChat(username: string) {
       }
       const rms = Math.sqrt(sum / inputData.length);
 
-      if (rms > 0.02) {
+      if (rms > 0.003) { // Lowered RMS threshold for transmitting audio
         const pcmBuffer = new Float32Array(inputData);
         socket.emit("voice_audio", pcmBuffer.buffer);
       }
