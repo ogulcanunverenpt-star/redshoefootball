@@ -1,7 +1,7 @@
 {
   "name": "redshoefootball",
   "version": "1.0.0",
-  "description": "Multiplayer Football Game",
+  "description": "Multiplayer Football Game with Voice Chat",
   "main": "server/index.js",
   "scripts": {
     "postinstall": "cd client && npm install && npm run build && cd ../server && npm install",
