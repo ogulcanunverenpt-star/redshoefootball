@@ -490,12 +490,43 @@ document.addEventListener("contextmenu", (event) => event.preventDefault());
 async function initAudioChat(username: string) {
   socket.emit("set username", username);
 
+  const playbackCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+  document.addEventListener("click", () => {
+    if (playbackCtx.state === "suspended") {
+      playbackCtx.resume();
+    }
+  });
+
+  socket.on("voice_audio", ({ id, data }) => {
+    try {
+      if (playbackCtx.state === "suspended") {
+        playbackCtx.resume();
+      }
+      const float32Array = new Float32Array(data);
+      const buffer = playbackCtx.createBuffer(1, float32Array.length, playbackCtx.sampleRate);
+      buffer.getChannelData(0).set(float32Array);
+
+      const sourceNode = playbackCtx.createBufferSource();
+      sourceNode.buffer = buffer;
+      sourceNode.connect(playbackCtx.destination);
+      sourceNode.start();
+    } catch (e) {
+      console.error("Audio playback error:", e);
+    }
+  });
+
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    console.log("Microphone connected for voice chat.");
+    console.log("Microphone connected. Voice chat active.");
 
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const source = audioCtx.createMediaStreamSource(stream);
+
+    const processor = audioCtx.createScriptProcessor(2048, 1, 1);
+    const silentGain = audioCtx.createGain();
+    silentGain.gain.value = 0;
+
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 512;
     source.connect(analyser);
@@ -517,6 +548,24 @@ async function initAudioChat(username: string) {
         socket.emit("speaking", isSpeaking);
       }
     }, 200);
+
+    processor.onaudioprocess = (e) => {
+      const inputData = e.inputBuffer.getChannelData(0);
+      let sum = 0;
+      for (let i = 0; i < inputData.length; i++) {
+        sum += inputData[i] * inputData[i];
+      }
+      const rms = Math.sqrt(sum / inputData.length);
+
+      if (rms > 0.02) {
+        const pcmBuffer = new Float32Array(inputData);
+        socket.emit("voice_audio", pcmBuffer.buffer);
+      }
+    };
+
+    source.connect(processor);
+    processor.connect(silentGain);
+    silentGain.connect(audioCtx.destination);
 
   } catch (err) {
     console.log("No microphone or permission denied. Operating in Listen-Only mode.", err);
