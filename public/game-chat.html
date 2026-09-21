@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Canlı Oyun Sohbeti</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { margin:0; padding:15px; background:#0b0f19; color:#fff; font-family:sans-serif; display:flex; flex-direction:column; height:100vh; box-sizing:border-box; }
+    h3 { margin:0 0 10px 0; color:#00ff9b; text-align:center; font-size: 20px; }
+    #chat-box { flex:1; overflow-y:auto; background:#111827; border:2px solid #00ff9b; border-radius:10px; padding:12px; margin-bottom:10px; }
+    .msg { margin-bottom:10px; font-size:15px; line-height:1.4; word-break:break-word; }
+    .user { font-weight:bold; color:#3b82f6; }
+    #chat-form { display:flex; gap:8px; }
+    #msg-input { flex:1; padding:12px; background:#1f2937; border:1px solid #3b82f6; color:#fff; font-size:15px; border-radius:8px; outline:none; }
+    button { padding:12px 20px; background:#00ff9b; color:#000; border:none; font-weight:bold; font-size:15px; border-radius:8px; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <h3>💬 Canlı Oyun Sohbeti</h3>
+  <div id="chat-box">
+    <div class="msg"><span class="user">Sistem:</span> Hoş geldiniz! Canlı sohbete katıldınız.</div>
+  </div>
+  <form id="chat-form">
+    <input id="msg-input" placeholder="Mesajınızı yazın..." autocomplete="off" />
+    <button type="submit">Gönder</button>
+  </form>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const username = urlParams.get('username') || localStorage.getItem('userNickname') || 'Oyuncu';
+    const socket = io({
+      transports: ['polling', 'websocket'],
+      extraHeaders: { "ngrok-skip-browser-warning": "true" }
+    });
+
+    const chatBox = document.getElementById('chat-box');
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('msg-input');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      socket.emit('game_chat_message', { username, text });
+      appendMsg(username, text, true);
+      input.value = '';
+    });
+
+    socket.on('game_chat_message', ({ username: sender, text }) => {
+      appendMsg(sender, text, false);
+    });
+
+    function appendMsg(sender, text) {
+      const div = document.createElement('div');
+      div.className = 'msg';
+      div.innerHTML = `<span class="user">${escapeHtml(sender)}:</span> ${escapeHtml(text)}`;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+  </script>
+</body>
+</html>

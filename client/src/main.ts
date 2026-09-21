@@ -2,9 +2,13 @@ import { Game } from "./game";
 import { io } from "socket.io-client";
 import * as THREE from "three";
 
-// Dynamic socket connection URL for local network / mobile access
-const serverHost = window.location.hostname || "localhost";
-const socket = io(`https://${serverHost}`);
+// Connect Socket.IO to current origin / host with ngrok header support
+const socket = io({
+  transports: ['polling', 'websocket'],
+  extraHeaders: {
+    "ngrok-skip-browser-warning": "true"
+  }
+});
 
 export interface Quaternion {
   x: number;
@@ -42,7 +46,6 @@ function setupMouseLookControls() {
   });
 
   document.addEventListener("mousemove", (e) => {
-    // Rotate camera on mouse movement (PointerLock active or active mouse move)
     const movementX = e.movementX || 0;
     const movementY = e.movementY || 0;
 
@@ -52,7 +55,6 @@ function setupMouseLookControls() {
     currentYaw -= movementX * sensitivity;
     currentPitch -= movementY * sensitivity;
 
-    // Limit pitch angle (look up/down limits)
     currentPitch = Math.max(-Math.PI / 2.3, Math.min(Math.PI / 2.3, currentPitch));
 
     const euler = new THREE.Euler(currentPitch, currentYaw, 0, "YXZ");
@@ -238,7 +240,7 @@ function setupCameraTouchJoystick() {
   window.addEventListener("touchcancel", handleTouchEnd, { passive: false });
 }
 
-// --- Action Power Charge System (Hold Mouse Left/Right Click or Touch Buttons) ---
+// --- Action Power Charge System ---
 let powerChargeTimer: number | null = null;
 let currentActionPower = 0;
 let activeActionType: string | null = null;
@@ -317,16 +319,9 @@ function setupPlayStationActionButtons() {
     el.addEventListener("mouseup", onEnd);
   };
 
-  // ◯ Circle (Red) = ŞUT (Shoot / Boot)
   bindPowerButton("btn-circle", "boot");
-
-  // ✖ Cross (Blue) = PAS (Short Pass / Tap)
   bindPowerButton("btn-cross", "tap");
-
-  // Δ Triangle (Green) = ARA PAS (Through Pass)
   bindPowerButton("btn-triangle", "through_pass");
-
-  // ▢ Square (Pink) = ORTA (High Cross)
   bindPowerButton("btn-square", "cross");
 }
 
@@ -462,7 +457,7 @@ document.addEventListener("keyup", (e) => {
   }
 });
 
-// PC Mouse Controls: Sol Tık = ŞUT (Shoot), Sağ Tık = PAS (Pass) with Power Meter Charging
+// PC Mouse Controls
 document.addEventListener("mousedown", (e) => {
   const target = e.target as HTMLElement;
   if (target && target.closest("#mobile-controls")) return;
@@ -489,6 +484,27 @@ document.addEventListener("contextmenu", (event) => event.preventDefault());
 
 const peerConnections: { [key: string]: RTCPeerConnection } = {};
 let localAudioStream: MediaStream | null = null;
+let isGameMicMuted = false;
+
+function setupMicButton() {
+  const micBtn = document.getElementById("game-mic-btn");
+  const micIcon = document.getElementById("game-mic-icon");
+  const micStatus = document.getElementById("game-mic-status");
+
+  if (micBtn) {
+    micBtn.style.display = "flex";
+    micBtn.addEventListener("click", () => {
+      if (!localAudioStream) return;
+      isGameMicMuted = !isGameMicMuted;
+      localAudioStream.getAudioTracks().forEach(track => track.enabled = !isGameMicMuted);
+
+      if (micStatus) micStatus.textContent = isGameMicMuted ? "Sesi Aç" : "Sesi Kapat";
+      if (micIcon) micIcon.className = isGameMicMuted ? "fas fa-microphone-slash" : "fas fa-microphone";
+      micBtn.style.borderColor = isGameMicMuted ? "#ff3355" : "#00ff9b";
+      micBtn.style.color = isGameMicMuted ? "#ff3355" : "#00ff9b";
+    });
+  }
+}
 
 async function initWebRTCAudio(username: string) {
   socket.emit("set username", username);
@@ -642,7 +658,7 @@ function createPeerConnection(peerId: string, shouldOffer: boolean): RTCPeerConn
 
       try {
         await audioElem.play();
-        console.log("========== AUDIO PLAYING SUCCESSFULLY ==========");
+        console.log("========== AUDIO PLAYBACK SUCCESSFUL ==========");
       } catch (e) {
         console.error("========== AUDIO PLAYBACK ERROR ==========", e);
       }
@@ -664,9 +680,17 @@ window.addEventListener("DOMContentLoaded", () => {
   const input = document.getElementById("username-input") as HTMLInputElement;
   const modal = document.getElementById("name-modal");
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const prefilledNickname = urlParams.get('nickname') || localStorage.getItem('userNickname') || "";
+  if (input && prefilledNickname) {
+    input.value = prefilledNickname;
+  }
+
   const startGame = () => {
     const username = input ? input.value.trim() || "Oyuncu" : "Oyuncu";
+    localStorage.setItem('userNickname', username);
     if (modal) modal.style.display = "none";
+    setupMicButton();
     initWebRTCAudio(username);
   };
 

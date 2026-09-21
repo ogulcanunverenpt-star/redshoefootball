@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VideoMeet3DFootball</string>
+    <string name="title_activity_main">VideoMeet3DFootball</string>
+    <string name="package_name">com.cundai.app</string>
+    <string name="custom_url_scheme">com.cundai.app</string>
+</resources>

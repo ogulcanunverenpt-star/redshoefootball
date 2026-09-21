@@ -1,14 +1,35 @@
 {
-  "name": "redshoefootball",
-  "version": "1.0.0",
-  "description": "Multiplayer Football Game with Voice Chat",
-  "main": "server/index.js",
+  "name": "node_passport_login",
+  "version": "2.0.0",
+  "description": "Node.js authentication with Passport and SQLite",
+  "main": "app.js",
   "scripts": {
-    "postinstall": "cd client && npm install && npm run build && cd ../server && npm install",
-    "start": "node server/index.js"
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "postinstall": "cd redshoefootball/client && npm install && npm run build"
   },
-  "dependencies": {},
-  "engines": {
-    "node": ">=18.0.0"
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "bcryptjs": "^3.0.3",
+    "connect-flash": "^0.1.1",
+    "dotenv": "^18.0.1",
+    "ejs": "^5.0.2",
+    "express": "^5.2.1",
+    "express-ejs-layouts": "^2.5.1",
+    "express-session": "^1.19.0",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "peer": "^1.0.2",
+    "socket.io": "^4.8.1",
+    "sqlite3": "^5.1.7",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
+    "nodemon": "^3.1.14"
   }
 }
