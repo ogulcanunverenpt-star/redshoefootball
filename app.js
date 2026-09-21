@@ -704,8 +704,8 @@ app.use('/', require('./routes/index.js'));
 app.use('/users', require('./routes/users.js'));
 
 // Video Meeting Room Route
-//app.get('/:room', ensureAuthenticated, (req, res, next) => {
-app.get('/:room', (req, res, next) => {
+app.get('/:room', ensureAuthenticated, (req, res, next) => {
+//app.get('/:room', (req, res, next) => {
   const reserved = ['login', 'register', 'dashboard', 'users', 'meet', 'game', 'assets', 'peerjs', 'public', 'favicon.ico', 'api'];
   if (reserved.includes(req.params.room.toLowerCase())) {
     return next();
