@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>3D Metaverse Futbol & Video Meet Hub</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none;
+        background-color: #0b0f19;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      }
+
+      #name-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(11, 15, 25, 0.92);
+        backdrop-filter: blur(12px);
+        z-index: 20000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        padding: 20px;
+      }
+
+      .glass-card {
+        background: rgba(17, 24, 39, 0.85);
+        border: 2px solid rgba(0, 255, 155, 0.4);
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 440px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 0 35px rgba(0, 255, 155, 0.25);
+        backdrop-filter: blur(16px);
+      }
+
+      .container {
+        position: fixed;
+        top: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10000;
+        pointer-events: none;
+      }
+
+      .scoreboard {
+        background: rgba(11, 15, 25, 0.85);
+        padding: 10px 24px;
+        border-radius: 12px;
+        border: 2px solid #00ff9b;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 0 15px rgba(0, 255, 155, 0.4);
+        backdrop-filter: blur(8px);
+      }
+
+      .score {
+        display: flex;
+        align-items: center;
+      }
+
+      #timer {
+        color: #00ff9b;
+        font-family: "Inter", sans-serif;
+        font-weight: bold;
+        font-size: 20px;
+        margin-top: 3px;
+      }
+
+      .team {
+        font-size: 22px;
+        font-weight: bold;
+        border-radius: 6px;
+        color: white;
+        padding: 4px 14px;
+        font-family: "Inter", sans-serif;
+      }
+
+      #goal {
+        font-family: "Inter", sans-serif;
+        font-weight: bold;
+        font-size: 26px;
+        color: #ffff00;
+        text-shadow: 0 0 10px #ff0000;
+      }
+
+      #power-meter-container {
+        position: fixed;
+        bottom: 160px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 280px;
+        height: 18px;
+        background: rgba(0, 0, 0, 0.8);
+        border: 2px solid #ffffff;
+        border-radius: 10px;
+        overflow: hidden;
+        display: none;
+        z-index: 2500;
+        box-shadow: 0 0 10px rgba(0, 255, 150, 0.8);
+      }
+
+      #power-meter-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(to right, #00ff9b, #ffff00, #ff0044);
+        transition: width 0.03s linear;
+      }
+
+      #mobile-controls {
+        position: fixed;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        padding: 0 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        z-index: 2000;
+        pointer-events: none;
+      }
+
+      #move-joystick-container {
+        position: relative;
+        width: 130px;
+        height: 130px;
+        pointer-events: auto;
+        touch-action: none;
+      }
+
+      .joystick-base {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.65);
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+      }
+
+      .joystick-thumb {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: rgba(0, 255, 150, 0.85);
+        border: 2px solid #ffffff;
+        box-shadow: 0 0 12px rgba(0, 255, 150, 0.9);
+        position: absolute;
+        transition: transform 0.04s ease-out;
+      }
+
+      #right-controls-cluster {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        pointer-events: auto;
+      }
+
+      #camera-joystick-container {
+        position: relative;
+        width: 110px;
+        height: 110px;
+        pointer-events: auto;
+        touch-action: none;
+      }
+
+      #camera-joystick-base {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.18);
+        border: 2px solid rgba(255, 255, 0, 0.7);
+        box-shadow: 0 0 12px rgba(255, 255, 0, 0.5);
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+      }
+
+      #camera-joystick-thumb {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: rgba(255, 235, 0, 0.85);
+        border: 2px solid #ffffff;
+        box-shadow: 0 0 10px rgba(255, 235, 0, 0.8);
+        position: absolute;
+        transition: transform 0.04s ease-out;
+      }
+
+      #ps-button-diamond {
+        position: relative;
+        width: 140px;
+        height: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ps-btn {
+        position: absolute;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.9);
+        color: white;
+        font-family: "Inter", sans-serif;
+        font-weight: bold;
+        font-size: 18px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+        backdrop-filter: blur(4px);
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .ps-btn span {
+        font-size: 8px;
+        margin-top: 1px;
+      }
+
+      .ps-triangle {
+        top: 0;
+        left: 46px;
+        background: rgba(0, 200, 80, 0.9);
+      }
+
+      .ps-circle {
+        top: 46px;
+        right: 0;
+        background: rgba(255, 30, 60, 0.9);
+      }
+
+      .ps-cross {
+        bottom: 0;
+        left: 46px;
+        background: rgba(0, 140, 255, 0.9);
+      }
+
+      .ps-square {
+        top: 46px;
+        left: 0;
+        background: rgba(255, 0, 180, 0.9);
+      }
+
+      .ps-btn:active {
+        transform: scale(0.88);
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Glassmorphism Auth & Decentralized Node Hub Modal -->
+    <div id="name-modal">
+      <div class="glass-card">
+        <h2 style="color:#00ff9b; margin-top:0; margin-bottom:8px; font-size:24px;"><i class="fas fa-network-wired me-2"></i>Decentralized Hub</h2>
+        <p style="color:#aaa; margin-bottom:15px; font-size:13px; line-height:1.4;">İstediğiniz sunucuya veya mesh node'a bağlanın!</p>
+
+        <div style="text-align:left; margin-bottom:12px;">
+          <label style="display:block; color:#ddd; font-size:12px; font-weight:bold; margin-bottom:4px;">Sunucu URL / Subdomain (Örn: https://meshchat-xxxx.ogulcan.cfd):</label>
+          <input type="text" id="serverurl-input" placeholder="https://..." style="width:100%; padding:10px; font-size:14px; border-radius:8px; border:1px solid #3b82f6; background:#1f2937; color:#3b82f6; font-weight:bold; outline:none; box-sizing:border-box;" />
+        </div>
+
+        <div style="text-align:left; margin-bottom:12px;">
+          <label style="display:block; color:#ddd; font-size:12px; font-weight:bold; margin-bottom:4px;">Oyuncu Adınız / Nickname:</label>
+          <input type="text" id="username-input" placeholder="Adınız..." maxlength="16" style="width:100%; padding:10px; font-size:14px; border-radius:8px; border:1px solid #00ff9b; background:#1f2937; color:#00ff9b; font-weight:bold; outline:none; box-sizing:border-box;" />
+        </div>
+
+        <div style="text-align:left; margin-bottom:18px;">
+          <label style="display:block; color:#ddd; font-size:12px; font-weight:bold; margin-bottom:4px;">Oda / Saha Adı:</label>
+          <input type="text" id="gameroom-input" placeholder="saha-1" value="saha-1" maxlength="20" style="width:100%; padding:10px; font-size:14px; border-radius:8px; border:1px solid #374151; background:#1f2937; color:#fff; outline:none; box-sizing:border-box;" />
+        </div>
+
+        <button id="enter-game-btn" style="width:100%; padding:13px; background:#00ff9b; color:#0b0f19; font-weight:bold; font-size:17px; border:none; border-radius:8px; cursor:pointer; box-shadow:0 0 20px rgba(0,255,155,0.4); transition:all 0.2s; margin-bottom:10px;">
+          <i class="fas fa-play me-2"></i> Sunucuya & Sahaya Bağlan
+        </button>
+
+        <a href="/meet" style="display:block; width:100%; padding:11px; background:rgba(59, 130, 246, 0.2); color:#3b82f6; font-weight:bold; font-size:14px; border:1px solid #3b82f6; border-radius:8px; text-decoration:none; box-sizing:border-box;">
+          <i class="fas fa-video me-2"></i> Lobiye Dön
+        </a>
+      </div>
+    </div>
+
+    <!-- Top Left Overlay Control Toolbar -->
+    <div style="position:fixed; top:15px; left:15px; z-index:15000; display:flex; gap:10px; align-items:center;">
+      <button id="game-mic-btn" style="padding:10px 18px; background:rgba(11, 15, 25, 0.85); color:#00ff9b; border:2px solid #00ff9b; border-radius:8px; font-family:'Inter',sans-serif; font-weight:bold; cursor:pointer; display:none; align-items:center; gap:8px; backdrop-filter:blur(6px);">
+        <i class="fas fa-microphone" id="game-mic-icon"></i>
+        <span id="game-mic-status">Sesi Kapat</span>
+      </button>
+
+      <button id="game-screenshare-btn" onclick="startPeerScreenShare()" style="padding:10px 18px; background:rgba(11, 15, 25, 0.85); color:#00ff9b; border:2px solid #00ff9b; border-radius:8px; font-family:'Inter',sans-serif; font-weight:bold; cursor:pointer; display:none; align-items:center; gap:8px; backdrop-filter:blur(6px);">
+        <i class="fas fa-desktop"></i>
+        <span>Ekran Paylaşımı</span>
+      </button>
+
+      <a href="/meet" style="padding:10px 18px; background:rgba(11, 15, 25, 0.85); color:#3b82f6; border:2px solid #3b82f6; border-radius:8px; font-family:'Inter',sans-serif; font-weight:bold; text-decoration:none; display:flex; align-items:center; gap:8px; backdrop-filter:blur(6px);">
+        <i class="fas fa-video"></i>
+        <span>Lobiye Dön</span>
+      </a>
+    </div>
+
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+
+    <div id="power-meter-container">
+      <div id="power-meter-bar"></div>
+    </div>
+
+    <div class="container">
+      <div class="scoreboard">
+        <div class="score">
+          <span class="team" id="team0" style="background-color: red">0</span>
+          <span style="color:white; font-family: Inter; margin: 0 8px;">-</span>
+          <span class="team" id="team1" style="background-color: blue">0</span>
+        </div>
+        <div id="timer">5m</div>
+        <div id="goal" style="visibility:hidden;">GOAL</div>
+      </div>
+    </div>
+
+    <div id="mobile-controls">
+      <div id="move-joystick-container">
+        <div class="joystick-base">
+          <div id="move-joystick-thumb" class="joystick-thumb"></div>
+        </div>
+      </div>
+
+      <div id="right-controls-cluster">
+        <div id="camera-joystick-container">
+          <div id="camera-joystick-base">
+            <div id="camera-joystick-thumb"></div>
+          </div>
+        </div>
+
+        <div id="ps-button-diamond">
+          <button id="btn-triangle" class="ps-btn ps-triangle">
+            Δ
+            <span>ARA PAS</span>
+          </button>
+          <button id="btn-circle" class="ps-btn ps-circle">
+            ◯
+            <span>ŞUT</span>
+          </button>
+          <button id="btn-cross" class="ps-btn ps-cross">
+            ✖
+            <span>PAS</span>
+          </button>
+          <button id="btn-square" class="ps-btn ps-square">
+            ▢
+            <span>ORTA</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
