@@ -9,7 +9,7 @@ import { Player } from "./player";
 export type Position = { x: number; y: number; z: number };
 
 export type Players = {
-  [key: string]: { position: Position; looking: Quaternion; team: number };
+  [key: string]: { position: Position; looking: Quaternion; team: number; username?: string };
 };
 
 export class Game {
@@ -41,8 +41,8 @@ export class Game {
     this.id = id;
     this.players = players;
 
-    Object.entries(players).forEach(([id, { position, team }]) => {
-      this.playerJoined(id, position, team);
+    Object.entries(players).forEach(([id, { position, team, username }]) => {
+      this.playerJoined(id, position, team, username);
     });
 
     this.map = new CustomMap({ x: 0, y: 0, z: 0 });
@@ -295,6 +295,7 @@ export class Game {
 
   playerJoined = (id: string, { x, y, z }: Position, team: number, username: string = "Player") => {
     if (id !== this.id) {
+      this.playerLeft(id);
       const player = new Player(team, username);
       player.position.set(x, y, z);
       this.scene.add(player);
@@ -309,6 +310,15 @@ export class Game {
       delete this.playerObjects[id];
     }
   };
+
+  reconnect(id: string, players: Players) {
+    Object.keys(this.playerObjects).forEach((playerId) => this.playerLeft(playerId));
+    this.id = id;
+    this.players = players;
+    Object.entries(players).forEach(([playerId, { position, team, username }]) => {
+      this.playerJoined(playerId, position, team, username);
+    });
+  }
 
   setPlayerSpeaking = (id: string, isSpeaking: boolean) => {
     if (this.playerObjects[id]) {
@@ -334,6 +344,7 @@ export class Game {
     }
   ) => {
     const delta = 0.016;
+    this.players = players;
 
     Object.entries(players).forEach(([id, data]: [string, any]) => {
       const { position, looking, username } = data;
@@ -344,7 +355,7 @@ export class Game {
         this.camera.quaternion.copy(q);
       } else {
         if (!this.playerObjects[id]) {
-          this.playerJoined(id, position, 0, username || "Player");
+          this.playerJoined(id, position, data.team, username || "Player");
         }
         const prevPos = this.playerObjects[id].position.clone();
         this.playerObjects[id].position.set(position.x, position.y, position.z);

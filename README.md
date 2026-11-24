@@ -57,10 +57,24 @@ For development with automatic restarts:
 npm run dev
 ```
 
+### Multiplayer deployment
+
+The game, chat, rooms, and PeerJS signaling use in-memory state and require a
+single persistent Node.js server. Deploy this repository as one Railway
+instance (the included `railway.json` starts `node app.js`), and point the
+game domain directly to that service. The server listens on `PORT`, or 4000
+locally. Ensure the proxy permits WebSocket upgrades and long polling. Multiple
+instances require shared game state and Socket.IO coordination; sticky sessions
+alone do not synchronize the game. SQLite data also needs persistent storage.
+
+Vercel Function instances have bounded lifetimes and independent memory, so
+the current game engine cannot reliably run there without a shared-state
+redesign. Deploying a new build or changing DNS does not migrate live state.
+
 Then visit:
 
 ```text
-http://localhost:5000
+http://localhost:4000
 ```
 
 ## Routes

@@ -8,6 +8,7 @@ const http = require('http');
 const socketio = require('socket.io');
 const { v4: uuidv4 } = require('uuid');
 const { ExpressPeerServer } = require('peer');
+const { WebSocketServer } = require('ws');
 const { exec } = require('child_process');
 const fs = require('fs');
 require('dotenv').config();
@@ -27,7 +28,20 @@ const io = socketio(server, {
 });
 
 // PeerJS Setup
-const peerServer = ExpressPeerServer(server, { debug: true });
+const peerServer = ExpressPeerServer(server, {
+  debug: true,
+  createWebSocketServer: ({ path: peerPath }) => {
+    const peerSockets = new WebSocketServer({ noServer: true });
+    server.on('upgrade', (req, socket, head) => {
+      if (req.url.split('?')[0] === peerPath) {
+        peerSockets.handleUpgrade(req, socket, head, (ws) => {
+          peerSockets.emit('connection', ws, req);
+        });
+      }
+    });
+    return peerSockets;
+  }
+});
 app.use('/peerjs', peerServer);
 
 // Connect SQLite Database
@@ -721,9 +735,9 @@ app.get('/:room', ensureAuthenticated, (req, res, next) => {
   });
 });
 
-const PORT = 4000;//process.env.PORT || 4000;
+const PORT = process.env.PORT || 4000;
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT} (Bound to 0.0.0.0)`);
+  console.log(`Server running on port ${server.address().port} (Bound to 0.0.0.0)`);
   //startCloudflareTunnel();
 });

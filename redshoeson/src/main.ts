@@ -333,58 +333,66 @@ function setupPlayStationActionButtons() {
 socket.on("start", ({ id, players, score, team }) => {
   setScores(score);
 
+  for (const teamId of [0, 1]) {
+    const element = document.getElementById(`team${teamId}`);
+    if (element) element.style.color = "";
+  }
   const scoreElement = document.getElementById(`team${team}`);
   if (scoreElement) {
     scoreElement.style.color = "yellow";
   }
 
   console.log("Game started:", id, players);
-  activeGame = new Game(id, players, (quaternion: Quaternion) => {
-    socket.emit("set looking", quaternion);
-  });
+  if (activeGame) {
+    activeGame.reconnect(id, players);
+  } else {
+    activeGame = new Game(id, players, (quaternion: Quaternion) => {
+      socket.emit("set looking", quaternion);
+    });
 
-  setupMouseLookControls();
-  setupMoveTouchJoystick();
-  setupCameraTouchJoystick();
-  setupPlayStationActionButtons();
+    setupMouseLookControls();
+    setupMoveTouchJoystick();
+    setupCameraTouchJoystick();
+    setupPlayStationActionButtons();
+  }
+});
 
-  socket.on("update clock", (time) => {
-    const element = document.getElementById("timer");
-    if (element) {
-      const mins = Math.floor(time / 60);
-      const sec = time % 60;
-      element.innerText = `${mins}m${sec}`;
-    }
-  });
+socket.on("update clock", (time) => {
+  const element = document.getElementById("timer");
+  if (element) {
+    const mins = Math.floor(time / 60);
+    const sec = time % 60;
+    element.innerText = `${mins}m${sec}`;
+  }
+});
 
-  socket.on("player joined", ({ id, state: { position, username }, team }) => {
-    if (activeGame) activeGame.playerJoined(id, position, team, username);
-  });
+socket.on("player joined", ({ id, state: { position, username }, team }) => {
+  if (activeGame) activeGame.playerJoined(id, position, team, username);
+});
 
-  socket.on("player left", (id) => {
-    if (activeGame) activeGame.playerLeft(id);
-  });
+socket.on("player left", (id) => {
+  if (activeGame) activeGame.playerLeft(id);
+});
 
-  socket.on("action", ({ id, type }) => {
-    if (activeGame) activeGame.playAction(id, type);
-  });
+socket.on("action", ({ id, type }) => {
+  if (activeGame) activeGame.playAction(id, type);
+});
 
-  socket.on("speaking_update", ({ id, isSpeaking }) => {
-    if (activeGame) activeGame.setPlayerSpeaking(id, isSpeaking);
-  });
+socket.on("speaking_update", ({ id, isSpeaking }) => {
+  if (activeGame) activeGame.setPlayerSpeaking(id, isSpeaking);
+});
 
-  socket.on("goal", ({ score }) => {
-    setScores(score);
-    const goalElement = document.getElementById("goal");
-    if (goalElement) {
-      goalElement.style.visibility = "visible";
-      setTimeout(() => (goalElement.style.visibility = "hidden"), 5000);
-    }
-  });
+socket.on("goal", ({ score }) => {
+  setScores(score);
+  const goalElement = document.getElementById("goal");
+  if (goalElement) {
+    goalElement.style.visibility = "visible";
+    setTimeout(() => (goalElement.style.visibility = "hidden"), 5000);
+  }
+});
 
-  socket.on("tick", (players, ball) => {
-    if (activeGame) activeGame.tick(players, ball);
-  });
+socket.on("tick", (players, ball) => {
+  if (activeGame) activeGame.tick(players, ball);
 });
 
 // PC Keyboard Controls
@@ -493,6 +501,15 @@ document.addEventListener("contextmenu", (event) => event.preventDefault());
 
 let peer: any = null;
 let myPeerId: string | null = null;
+let gameIdentity: { username: string; roomId: string } | null = null;
+
+socket.on("connect", () => {
+  if (!gameIdentity) return;
+  socket.emit("set username", gameIdentity.username);
+  if (myPeerId) {
+    socket.emit("peer_register", { peerId: myPeerId, ...gameIdentity });
+  }
+});
 let localAudioStream: MediaStream | null = null;
 let isGameMicMuted = false;
 const peerCalls = new Map<string, any>();
@@ -598,6 +615,7 @@ async function startPeerScreenShare() {
 (window as any).startPeerScreenShare = startPeerScreenShare;
 
 function initPeerJSVoiceChat(username: string, roomId: string) {
+  gameIdentity = { username, roomId };
   socket.emit("set username", username);
 
   let peerHost = window.location.hostname || 'localhost';
