@@ -56,11 +56,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static('public'));
 
 // Serve 3D Football Game Static Build from redshoefootball folder
-app.use('/game', express.static(path.join(__dirname, 'redshoefootball/client/dist'), {
+app.use('/game', express.static(path.join(__dirname, 'redshoeson/dist'), {
   etag: false,
   maxAge: 0
 }));
-app.use('/assets', express.static(path.join(__dirname, 'redshoefootball/client/dist/assets')));
+app.use('/assets', express.static(path.join(__dirname, 'redshoeson/dist/assets')));
 
 // Express Session Middleware
 app.use(
