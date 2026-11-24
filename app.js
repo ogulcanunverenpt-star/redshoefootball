@@ -659,7 +659,7 @@ io.on('connection', (socket) => {
 });
 
 // REST API for Mesh Config & Active Rooms
-app.get('/api/config', (req, res) => {
+app.get('/api/config',ensureAuthenticated, (req, res) => {
   res.json({
     domainName: process.env.DOMAIN_NAME || '',
     activeCloudflareUrl: activeCloudflareUrl || '',
@@ -667,7 +667,7 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-app.get('/api/rooms', async (req, res) => {
+app.get('/api/rooms',ensureAuthenticated, async (req, res) => {
   const localRooms = getActiveRooms().map(r => ({ ...r, hostNode: process.env.DOMAIN_NAME || 'gamebler.xyz', isRemote: false }));
   try {
     const peerRooms = await meshRegistry.fetchPeerRooms();
