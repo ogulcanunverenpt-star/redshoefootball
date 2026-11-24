@@ -100,7 +100,7 @@ export class Game {
       { x: 0, y: 6, z: -23, ry: 0, url: "http://siir.me/kayip-cocuk" },          // Back (Arkası) -> talk-to-me app
       { x: 0, y: 6, z: 23, ry: Math.PI, url: "https://packetstorm.news/files/author/14973" },  // Front (Önü)
       { x: 17, y: 6, z: 0, ry: -Math.PI / 2, url: "http://127.0.0.1:3004" },// Right (Sağı) -> talk-to-me app
-      { x: -17, y: 6, z: 0, ry: Math.PI / 2, url: "https://patrontv56.cfd/ch.html?id=patron" } // Left (Solu)
+      { x: -17, y: 6, z: 0, ry: Math.PI / 2, url: "https://patroncanli.cfd/ch.html?id=patron" } // Left (Solu)
     ];
 
     billboardConfigs.forEach((config) => {

@@ -1,5 +1,8 @@
+android/
+client/
 node_modules
 client/node_modules
 server/node_modules
-redshoefootball/client/node_modules
-redshoefootball/server/node_modules
+redshoeson/client/node_modules
+redshoeson/server/node_modules
+redshoeson/node_modules

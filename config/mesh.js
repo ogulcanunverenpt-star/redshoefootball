@@ -4,7 +4,7 @@ const http = require('http');
 
 const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 const CLOUDFLARE_ZONE_ID = process.env.CLOUDFLARE_ZONE_ID;
-const DOMAIN_NAME = process.env.DOMAIN_NAME || 'ogulcan.cfd';
+const DOMAIN_NAME = process.env.DOMAIN_NAME || 'gamebler.xyz';
 
 // Generate a random unique mesh identifier starting with 'meshchat-' on startup
 const randomMeshId = 'meshchat-' + Math.random().toString(36).substring(2, 8);

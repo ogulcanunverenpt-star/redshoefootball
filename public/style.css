@@ -1,66 +1,169 @@
+/* ── CUNDAI MODERN DESIGN SYSTEM - SARI LACİVERT / YEŞİL BEYAZ ── */
+:root {
+  --navy-bg: #0d1b2a;
+  --navy-dark: #081018;
+  --navy-card: #13273c;
+  --yellow-gold: #facc15;
+  --yellow-hover: #fde047;
+  --green: #16a34a;
+  --green-glow: rgba(22, 163, 74, 0.8);
+  --text-light: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-hi: rgba(250, 204, 21, 0.25);
+}
+
+body {
+  background-color: var(--navy-dark);
+  color: var(--text-light);
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
 header {
-    background-image: linear-gradient(to right, #0d6efd, #111827);
+  background: linear-gradient(135deg, var(--navy-dark), var(--navy-card));
+  border-bottom: 2px solid var(--yellow-gold);
+  color: #ffffff !important;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+header h2, header h1 {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 main {
-    padding-bottom: 80px;
+  padding-bottom: 80px;
 }
 
-.min-vh-50 {
-    min-height: 50vh;
+.btn-primary {
+  background-color: var(--yellow-gold) !important;
+  border-color: var(--yellow-gold) !important;
+  color: #081018 !important;
+  font-weight: 800;
+  border-radius: 12px;
+  padding: 10px 22px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(250, 204, 21, 0.3);
+}
+.btn-primary:hover {
+  background-color: var(--yellow-hover) !important;
+  transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+  color: var(--yellow-gold) !important;
+  border-color: var(--yellow-gold) !important;
+  font-weight: 700;
+  border-radius: 12px;
+}
+.btn-outline-primary:hover {
+  background-color: var(--yellow-gold) !important;
+  color: #081018 !important;
 }
 
 .card {
-    border-color: rgba(0, 0, 0, 0.08);
+  background: var(--navy-card);
+  border: 1px solid var(--border-hi);
+  border-radius: 18px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+  color: var(--text-light);
+  position: relative;
+}
+.card:hover {
+  transform: translateY(-3px);
+  border-color: var(--yellow-gold);
 }
 
-.card-img-top {
-    padding: 20px;
+/* ── MODERN VIDEO CARDS & ACTIVE SPEAKER GREEN GLOW ── */
+#video-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  justify-content: center;
+  padding: 16px;
 }
 
-.alert {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    max-width: 350px;
-    z-index: 1080;
+.video-card {
+  position: relative;
+  background: #000000;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  transition: all 0.2s ease;
+  width: 360px;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
 }
 
-.video-card-wrapper {
-    min-height: 240px;
+.video-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.video-card-container {
-    transition: border 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    border: 3px solid transparent;
+/* ACTIVE SPEAKER GREEN GLOW CARD (IS-SPEAKING CLASS FROM CLASS.JS) */
+.is-speaking, .card.is-speaking, .video-card-container.is-speaking, .video-card.speaking {
+  border-color: var(--green) !important;
+  box-shadow: 0 0 30px var(--green-glow), 0 0 12px var(--green) !important;
+  animation: pulse-green 1.2s infinite alternate;
 }
 
-/* Green glowing border when speaking */
-.is-speaking {
-    border: 3px solid #198754 !important;
-    box-shadow: 0 0 20px rgba(25, 135, 84, 0.9) !important;
+.is-speaking::after, .card.is-speaking::after {
+  content: '🎙️ Konuşuyor';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--green);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  z-index: 10;
 }
 
-.video-card-wrapper video {
-    background-color: #000;
-    min-height: 200px;
-    object-fit: cover;
-    border-radius: 0.375rem;
+@keyframes pulse-green {
+  from { box-shadow: 0 0 15px rgba(22, 163, 74, 0.6); }
+  to { box-shadow: 0 0 35px rgba(22, 163, 74, 0.95); }
 }
 
-.hover-shadow {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+.speaker-badge {
+  display: none;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--green);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  align-items: center;
+  gap: 6px;
 }
 
-.hover-shadow:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+.video-card.speaking .speaker-badge, .is-speaking .speaker-badge {
+  display: flex;
 }
 
-.bg-success-subtle {
-    background-color: #d1e7dd;
-}
-
-.bg-warning-subtle {
-    background-color: #fff3cd;
+.listener-badge {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(8, 16, 24, 0.85);
+  color: var(--yellow-gold);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-hi);
+  z-index: 10;
 }

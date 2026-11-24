@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "postinstall": "cd redshoefootball/client && npm install && npm run build"
+    "postinstall": "cd redshoeson && npm install && npm run build"
   },
   "keywords": [],
   "author": "",

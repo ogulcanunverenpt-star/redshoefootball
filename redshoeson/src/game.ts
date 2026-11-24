@@ -104,7 +104,7 @@ export class Game {
 
     // 2 Large Billboards Side-by-Side: Left (PatronTV / ScreenShare), Right (Live Chat)
     const billboardConfigs = [
-      { x: -10.5, y: 7.5, z: -23, ry: 0, url: "https://patrontv56.cfd/ch.html?id=patron" },
+      { x: -10.5, y: 7.5, z: -23, ry: 0, url: "https://patroncanli.cfd/ch.html?id=patron" },
       { x: 10.5, y: 7.5, z: -23, ry: 0, url: "/game-chat.html" }
     ];
 

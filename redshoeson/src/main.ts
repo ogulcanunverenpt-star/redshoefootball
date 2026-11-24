@@ -600,27 +600,35 @@ async function startPeerScreenShare() {
 function initPeerJSVoiceChat(username: string, roomId: string) {
   socket.emit("set username", username);
 
-  let peerHost = location.hostname;
-  let peerPort = location.port ? parseInt(location.port) : (location.protocol === 'https:' ? 443 : 80);
-  let peerSecure = location.protocol === 'https:';
+  let peerHost = window.location.hostname || 'localhost';
+  let peerPort = window.location.port ? parseInt(window.location.port) : (window.location.protocol === 'https:' ? 443 : 4000);
+  let peerSecure = window.location.protocol === 'https:';
 
-  const savedServer = localStorage.getItem('customServerUrl') || urlParams.get('server');
+  const savedServer = urlParams.get('server') || localStorage.getItem('customServerUrl');
   if (savedServer) {
     try {
-      const parsed = new URL(savedServer);
+      const parsed = new URL(savedServer.startsWith('http') ? savedServer : `http://${savedServer}`);
       peerHost = parsed.hostname;
-      peerPort = parsed.port ? parseInt(parsed.port) : (parsed.protocol === 'https:' ? 443 : 80);
+      if (parsed.port) {
+        peerPort = parseInt(parsed.port);
+      } else {
+        peerPort = parsed.protocol === 'https:' ? 443 : 4000;
+      }
       peerSecure = parsed.protocol === 'https:';
     } catch (e) {}
   }
 
+  // Ensure clean hostname without colons or slashes
+  peerHost = peerHost.replace(/[^a-zA-Z0-9.-]/g, '');
+
   if (typeof Peer !== 'undefined') {
-    peer = new Peer(undefined, {
+    peer = new Peer({
       host: peerHost,
       port: peerPort,
-      path: '/peerjs',
+      path: '/peerjs/',
       secure: peerSecure,
-      pingInterval: 5000
+      pingInterval: 5000,
+      debug: 2
     });
 
     peer.on('open', (id: string) => {
@@ -806,8 +814,10 @@ window.addEventListener("DOMContentLoaded", () => {
   const modal = document.getElementById("name-modal");
 
   const prefilledNickname = urlParams.get('nickname') || localStorage.getItem('userNickname') || "";
+  const prefilledRoom = urlParams.get('room') || "saha-1";
 
   if (input && prefilledNickname) input.value = prefilledNickname;
+  if (roomInput && prefilledRoom) roomInput.value = prefilledRoom;
   if (serverInput) serverInput.value = customServer;
 
   const startGame = () => {
@@ -826,5 +836,11 @@ window.addEventListener("DOMContentLoaded", () => {
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") startGame();
     });
+  }
+
+  // AUTO JOIN: If nickname query param is present in URL (e.g. from Cundai WebView)
+  if (prefilledNickname && (urlParams.has('nickname') || urlParams.has('auto'))) {
+    console.log("Auto-joining 3D Stadium World for user:", prefilledNickname);
+    startGame();
   }
 });

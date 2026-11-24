@@ -668,7 +668,7 @@ app.get('/api/config', (req, res) => {
 });
 
 app.get('/api/rooms', async (req, res) => {
-  const localRooms = getActiveRooms().map(r => ({ ...r, hostNode: process.env.DOMAIN_NAME || 'ogulcan.cfd', isRemote: false }));
+  const localRooms = getActiveRooms().map(r => ({ ...r, hostNode: process.env.DOMAIN_NAME || 'gamebler.xyz', isRemote: false }));
   try {
     const peerRooms = await meshRegistry.fetchPeerRooms();
     const roomMap = new Map();
@@ -694,7 +694,7 @@ app.get('/meet', ensureAuthenticated, (req, res) => {
 });
 
 // 3D Football Game Page Route
-app.get('/game', ensureAuthenticated, (req, res) => {
+ app.get('/game', (req, res) => {//, ensureAuthenticated, (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.sendFile(path.join(__dirname, 'redshoefootball/client/dist/index.html'));
 });
